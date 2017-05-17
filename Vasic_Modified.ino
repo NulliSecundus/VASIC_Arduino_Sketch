@@ -5,10 +5,12 @@
 SimpleTimer timer;
 int readTimerID;
 int writeTimerID;
+int vasicTimerID;
 char serBuff[10];
 word avgTime = 1000;
 const int readTime = 11;
 
+SimpleTimer IRTimer;
 int IRTimerID;
 
 const int loadCellPin1 = A0;
@@ -55,6 +57,12 @@ void setup() {
   timer.disable(readTimerID);
   writeTimerID = timer.setInterval(avgTime, dataWrite);
   timer.disable(writeTimerID);
+  vasicTimerID = timer.setInterval(500, vasicGreeting);
+  timer.enable(vasicTimerID);
+
+  //IRTimer setup
+  IRTimerID = IRTimer.setInterval(100, readSensorStatus);
+  IRTimer.enable(IRTimerID);
 
   // change analog reference value from 5V to 2.56V
   //analogReference(INTERNAL2V56);
@@ -63,34 +71,42 @@ void setup() {
 void loop() {
   // main loop: read serial messages and put the microcontroller into the proper mode
   // Print a message to the LCD and wait before clearing.
+  /*
   while (greetingMessage) {
     lcd.setCursor(5, 0);
     lcd.print("VASIC");
     delay(5000);
     greetingMessage = false;
   }
+  */
 
   digitalWrite(IRLED, HIGH);
 
-  lcd.clear();
+  IRTimer.run();
+  if (millis() > time_step + time) {
+    lcdScreenPrint("VASIC", 5, 0);
+    time = millis();
+  }
 
-  readBuffer();
-  switch (serBuff[0]) {
-    case 'T':
-      sendChar('t');
-      timeMode();
-      break;
-    case 'Z':
-      sendChar('z');
-      tareMode();
-      break;
-    case 'P':
-      sendChar('p');
-      calibrationMode();
-      break;
-    case 'M':
-      sendChar('m');
-      collectionMode();
+  if (hasBuffer()) {
+    readBuffer();
+    switch (serBuff[0]) {
+      case 'T':
+        sendChar('t');
+        timeMode();
+        break;
+      case 'Z':
+        sendChar('z');
+        tareMode();
+        break;
+      case 'P':
+        sendChar('p');
+        calibrationMode();
+        break;
+      case 'M':
+        sendChar('m');
+        collectionMode();
+    }
   }
 }
 
@@ -98,59 +114,62 @@ void timeMode() {
   lcdScreenPrint("Time Mode");
 
   while (true) {
+    IRTimer.run();
     // read serial buffer and select the averaging time according to the index
     // sent by the host
-    readBuffer();
-    if (serBuff[0] == 'G') {
-      switch (serBuff[1]) {
-        case '0':
-          avgTime = 500;
-          sendChar('g');
-          break;
-        case '1':
-          avgTime = 1000;
-          sendChar('g');
-          break;
-        case '2':
-          avgTime = 1500;
-          sendChar('g');
-          break;
-        case '3':
-          avgTime = 2000;
-          sendChar('g');
-          break;
-        case '4':
-          avgTime = 2500;
-          sendChar('g');
-          break;
-        case '5':
-          avgTime = 3000;
-          sendChar('g');
-          break;
-        case '6':
-          avgTime = 3500;
-          sendChar('g');
-          break;
-        case '7':
-          avgTime = 4000;
-          sendChar('g');
-          break;
-        case '8':
-          avgTime = 4500;
-          sendChar('g');
-          break;
-        case '9':
-          avgTime = 5000;
-          sendChar('g');
-          break;
+    if (hasBuffer()) {
+      readBuffer();
+      if (serBuff[0] == 'G') {
+        switch (serBuff[1]) {
+          case '0':
+            avgTime = 500;
+            sendChar('g');
+            break;
+          case '1':
+            avgTime = 1000;
+            sendChar('g');
+            break;
+          case '2':
+            avgTime = 1500;
+            sendChar('g');
+            break;
+          case '3':
+            avgTime = 2000;
+            sendChar('g');
+            break;
+          case '4':
+            avgTime = 2500;
+            sendChar('g');
+            break;
+          case '5':
+            avgTime = 3000;
+            sendChar('g');
+            break;
+          case '6':
+            avgTime = 3500;
+            sendChar('g');
+            break;
+          case '7':
+            avgTime = 4000;
+            sendChar('g');
+            break;
+          case '8':
+            avgTime = 4500;
+            sendChar('g');
+            break;
+          case '9':
+            avgTime = 5000;
+            sendChar('g');
+            break;
+        }
+      } else if (serBuff[0] == 'H') {
+        Serial.write('h');
+        Serial.write('1'); // default average time value is 1 sec
+        Serial.write('\r');
+      } else if (serBuff[0] == 'X') {
+        // remain in Time Mode until receive 'X' from host
+        return;
       }
-    } else if (serBuff[0] == 'H') {
-      Serial.write('h');
-      Serial.write('1'); // default average time value is 1 sec
-      Serial.write('\r');
-    } else if (serBuff[0] == 'X') {
-      // remain in Time Mode until receive 'X' from host
-      return;
     }
   }
   lcd.clear();
@@ -160,22 +179,25 @@ void tareMode() {
   lcdScreenPrint("Tare Mode");
 
   while (true) {
+    IRTimer.run();
     // read the serial buffer and set the empty weight of the proper load cell
     // load cells are selected by 'A' or 'B' from the host
-    readBuffer();
-    switch (serBuff[0]) {
-      case 'A':
-        emptyWeightRead1 = analogRead(loadCellPin1);
-        sendChar('a');
-        break;
-      case 'B':
-        emptyWeightRead2 = analogRead(loadCellPin2);
-        sendChar('b');
-        break;
-      case 'Q':
-        // loop infinitely until 'Q' is received from the host to exit Tare Mode
-        sendChar('q');
-        return;
+    if (hasBuffer()) {
+      readBuffer();
+      switch (serBuff[0]) {
+        case 'A':
+          emptyWeightRead1 = analogRead(loadCellPin1);
+          sendChar('a');
+          break;
+        case 'B':
+          emptyWeightRead2 = analogRead(loadCellPin2);
+          sendChar('b');
+          break;
+        case 'Q':
+          // loop infinitely until 'Q' is received from the host to exit Tare Mode
+          sendChar('q');
+          return;
+      }
     }
   }
   lcd.clear();
@@ -185,95 +207,98 @@ void calibrationMode() {
   lcdScreenPrint("Calibration Mode");
 
   while (true) {
+    IRTimer.run();
     // read buffer and store the number of bytes read
     // set the selected cell according to 'A' or 'B' from host
     // read 10 empty weight values and store the average in emptyWeightRead#
     // read 10 test weight value and store the average in testWeightRead#
     // read the exact test weight value sent from the host (details below)
-    byte numBytes = readBuffer();
-    int selectedCell;
-    switch (serBuff[0]) {
+    if (hasBuffer()) {
+      byte numBytes = readBuffer();
+      int selectedCell;
+      switch (serBuff[0]) {
 
-      case 'A':
-        selectedCell = 1;
-        lcdScreenPrint("Left Side: ", 0, "Selected", 0);
-        sendChar('a');
-        break;
-      case 'B':
-        selectedCell = 2;
-        lcdScreenPrint("Right Side: ", 0, "Selected", 0);
-        sendChar('b');
-        break;
-      case 'C':
-        {
-          Statistic emptyBuff;
-          if (selectedCell == 1) {
-            emptyBuff.clear();
-            lcdScreenPrint("Left Side: ", 0, "Empty Weight", 0);
-            for (int i = 0; i < 10; i++) {
-              emptyBuff.add(analogRead(loadCellPin1));
-            }
-            //emptyWeightRead1 = analogRead(loadCellPin1);
-            emptyWeightRead1 = emptyBuff.average();
-            sendChar('c');
-          } else if (selectedCell == 2) {
-            emptyBuff.clear();
-            lcdScreenPrint("Right Side: ", 0, "Empty Weight", 0);
-            for (int i = 0; i < 10; i++) {
-              emptyBuff.add(analogRead(loadCellPin2));
-            }
-            //emptyWeightRead2 = analogRead(loadCellPin2);
-            emptyWeightRead2 = emptyBuff.average();
-            sendChar('c');
-          }
+        case 'A':
+          selectedCell = 1;
+          lcdScreenPrint("Left Side: ", 0, "Selected", 0);
+          sendChar('a');
           break;
-        }
-      case 'D':
-        {
-          lcdScreenPrint("Test Weight", 0, 0);
-          Statistic testBuff;
-          if (selectedCell == 1) {
-            testBuff.clear();
-            lcdScreenPrint("Left Side: ", 0, "Test Weight", 0);
-            for (int i = 0; i < 10; i++) {
-              testBuff.add(analogRead(loadCellPin1));
-            }
-            //testWeightRead1 = analogRead(loadCellPin1);
-            testWeightRead1 = testBuff.average();
-            sendChar('d');
-          } else if (selectedCell == 2) {
-            testBuff.clear();
-            lcdScreenPrint("Right Side: ", 0, "Test Weight", 0);
-            for (int i = 0; i < 10; i++) {
-              testBuff.add(analogRead(loadCellPin2));
-            }
-            //testWeightRead2 = analogRead(loadCellPin2);
-            testWeightRead2 = testBuff.average();
-            sendChar('d');
-          }
+        case 'B':
+          selectedCell = 2;
+          lcdScreenPrint("Right Side: ", 0, "Selected", 0);
+          sendChar('b');
           break;
-        }
-      case 'S':
-        // parse the test weight value (chars -> float)
-        // calculate the appropriate calibration slope for linear approximation
-        // m = (y2 - y1) / (x2 - x1), y1 = empty weight = 0
-        // calculate the appropriate offset value based on the tare value and calibration slope
-        // b = -1 * m * x1
-        testWeightValue = parseTestWeight(numBytes - 2);
-        lcdScreenPrint("Test Weight Sent", 0, 0);
-        if (selectedCell == 1) {
-          calibrationSlope1 = (float)testWeightValue / (testWeightRead1 - emptyWeightRead1);
-          calibrationOffset1 = (-1) * calibrationSlope1 * emptyWeightRead1;
-        } else if (selectedCell == 2) {
-          calibrationSlope2 = (float)testWeightValue / (testWeightRead2 - emptyWeightRead2);
-          calibrationOffset2 = (-1) * calibrationSlope2 * emptyWeightRead2;
-        }
-        sendChar('s');
-        break;
-      case 'Q':
-        // exit Calibration Mode when receives 'Q' from host
-        sendChar('q');
-        return;
+        case 'C':
+          {
+            Statistic emptyBuff;
+            if (selectedCell == 1) {
+              emptyBuff.clear();
+              lcdScreenPrint("Left Side: ", 0, "Empty Weight", 0);
+              for (int i = 0; i < 10; i++) {
+                emptyBuff.add(analogRead(loadCellPin1));
+              }
+              //emptyWeightRead1 = analogRead(loadCellPin1);
+              emptyWeightRead1 = emptyBuff.average();
+              sendChar('c');
+            } else if (selectedCell == 2) {
+              emptyBuff.clear();
+              lcdScreenPrint("Right Side: ", 0, "Empty Weight", 0);
+              for (int i = 0; i < 10; i++) {
+                emptyBuff.add(analogRead(loadCellPin2));
+              }
+              //emptyWeightRead2 = analogRead(loadCellPin2);
+              emptyWeightRead2 = emptyBuff.average();
+              sendChar('c');
+            }
+            break;
+          }
+        case 'D':
+          {
+            lcdScreenPrint("Test Weight", 0, 0);
+            Statistic testBuff;
+            if (selectedCell == 1) {
+              testBuff.clear();
+              lcdScreenPrint("Left Side: ", 0, "Test Weight", 0);
+              for (int i = 0; i < 10; i++) {
+                testBuff.add(analogRead(loadCellPin1));
+              }
+              //testWeightRead1 = analogRead(loadCellPin1);
+              testWeightRead1 = testBuff.average();
+              sendChar('d');
+            } else if (selectedCell == 2) {
+              testBuff.clear();
+              lcdScreenPrint("Right Side: ", 0, "Test Weight", 0);
+              for (int i = 0; i < 10; i++) {
+                testBuff.add(analogRead(loadCellPin2));
+              }
+              //testWeightRead2 = analogRead(loadCellPin2);
+              testWeightRead2 = testBuff.average();
+              sendChar('d');
+            }
+            break;
+          }
+        case 'S':
+          // parse the test weight value (chars -> float)
+          // calculate the appropriate calibration slope for linear approximation
+          // m = (y2 - y1) / (x2 - x1), y1 = empty weight = 0
+          // calculate the appropriate offset value based on the tare value and calibration slope
+          // b = -1 * m * x1
+          testWeightValue = parseTestWeight(numBytes - 2);
+          lcdScreenPrint("Test Weight Sent", 0, 0);
+          if (selectedCell == 1) {
+            calibrationSlope1 = (float)testWeightValue / (testWeightRead1 - emptyWeightRead1);
+            calibrationOffset1 = (-1) * calibrationSlope1 * emptyWeightRead1;
+          } else if (selectedCell == 2) {
+            calibrationSlope2 = (float)testWeightValue / (testWeightRead2 - emptyWeightRead2);
+            calibrationOffset2 = (-1) * calibrationSlope2 * emptyWeightRead2;
+          }
+          sendChar('s');
+          break;
+        case 'Q':
+          // exit Calibration Mode when receives 'Q' from host
+          sendChar('q');
+          return;
+      }
     }
   }
   lcd.clear();
@@ -354,6 +379,13 @@ void LED_Control(int i) {
     digitalWrite(LEDPin, HIGH);
   } else {
     digitalWrite(LEDPin, LOW);
+  }
+}
+
+void vasicGreeting() {
+  if (millis() > time_step + time) {
+    lcdScreenPrint("VASIC", 5, 0);
+    time = millis();
   }
 }
 
@@ -456,6 +488,15 @@ boolean getSensorStatus() {
     return true;
   } else {
     LED_Control(1);
+    return false;
+  }
+}
+
+// return true if there is serial input
+boolean hasBuffer() {
+  if (Serial.available() > 0) {
+    return true;
+  } else {
     return false;
   }
 }

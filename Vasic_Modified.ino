@@ -290,13 +290,10 @@ void collectionMode() {
       double dispReading2 = analogRead(loadCellPin2);
       dispReading2 = calibrationSlope2 * dispReading2 + calibrationOffset2;
 
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Left: ");
-      lcd.print(dispReading1);
-      lcd.setCursor(0, 1);
-      lcd.print("Right: ");
-      lcd.print(dispReading2);
+      String text1 = "Left: " + String(dispReading1);
+      String text2 = "Right: " + String(dispReading2);
+
+      lcdScreenPrint(text1, 0, text2, 0);
       time = millis();
     }
 
@@ -347,6 +344,14 @@ void LED_Control(int i) {
   } else {
     digitalWrite(LEDPin, LOW);
   }
+}
+
+void lcdScreenPrint(String str1, int col1, String str2, int col2){
+  lcd.clear();
+  lcd.setCursor(col1, 0);
+  lcd.print(str1);
+  lcd.setCursor(col2, 1);
+  lcd.print(str2);
 }
 
 void lcdScreenPrint(String str, int col, int row) {

@@ -5,7 +5,6 @@
 SimpleTimer timer;
 int readTimerID;
 int writeTimerID;
-int vasicTimerID;
 char serBuff[10];
 word avgTime = 1000;
 const int readTime = 11;
@@ -57,28 +56,15 @@ void setup() {
   timer.disable(readTimerID);
   writeTimerID = timer.setInterval(avgTime, dataWrite);
   timer.disable(writeTimerID);
-  vasicTimerID = timer.setInterval(500, vasicGreeting);
-  timer.enable(vasicTimerID);
 
   //IRTimer setup
   IRTimerID = IRTimer.setInterval(100, readSensorStatus);
   IRTimer.enable(IRTimerID);
-
-  // change analog reference value from 5V to 2.56V
-  //analogReference(INTERNAL2V56);
 }
 
 void loop() {
   // main loop: read serial messages and put the microcontroller into the proper mode
   // Print a message to the LCD and wait before clearing.
-  /*
-  while (greetingMessage) {
-    lcd.setCursor(5, 0);
-    lcd.print("VASIC");
-    delay(5000);
-    greetingMessage = false;
-  }
-  */
 
   digitalWrite(IRLED, HIGH);
 
@@ -307,13 +293,6 @@ void calibrationMode() {
 void collectionMode() {
   lcdScreenPrint("Collection Mode");
 
-  // debug code for numTimers - uncomment to use
-  /*
-  int n = timer.getNumTimers();
-  lcdScreenPrint(String(n));
-  delay(3000);
-  */
-
   // to wait for IR sensor to be broken
   while (true) {
     // check for serial imput and parse using same strategy as readBuffer()
@@ -379,13 +358,6 @@ void LED_Control(int i) {
     digitalWrite(LEDPin, HIGH);
   } else {
     digitalWrite(LEDPin, LOW);
-  }
-}
-
-void vasicGreeting() {
-  if (millis() > time_step + time) {
-    lcdScreenPrint("VASIC", 5, 0);
-    time = millis();
   }
 }
 

@@ -9,6 +9,7 @@ char serBuff[10];
 word avgTime = 1000;
 const int readTime = 11;
 
+SimpleTimer IRTimer;
 int IRTimerID;
 
 const int loadCellPin1 = A0;
@@ -56,6 +57,10 @@ void setup() {
   writeTimerID = timer.setInterval(avgTime, dataWrite);
   timer.disable(writeTimerID);
 
+  //IRTimer setup
+  IRTimerID = IRTimer.setInterval(100, readSensorStatus);
+  IRTimer.enable(IRTimerID);
+
   // change analog reference value from 5V to 2.56V
   //analogReference(INTERNAL2V56);
 }
@@ -73,6 +78,7 @@ void loop() {
   digitalWrite(IRLED, HIGH);
 
   lcd.clear();
+  IRTimer.run();
 
   readBuffer();
   switch (serBuff[0]) {
@@ -98,6 +104,7 @@ void timeMode() {
   lcdScreenPrint("Time Mode");
 
   while (true) {
+    IRTimer.run();
     // read serial buffer and select the averaging time according to the index
     // sent by the host
     readBuffer();
@@ -160,6 +167,7 @@ void tareMode() {
   lcdScreenPrint("Tare Mode");
 
   while (true) {
+    IRTimer.run();
     // read the serial buffer and set the empty weight of the proper load cell
     // load cells are selected by 'A' or 'B' from the host
     readBuffer();
@@ -185,6 +193,7 @@ void calibrationMode() {
   lcdScreenPrint("Calibration Mode");
 
   while (true) {
+    IRTimer.run();
     // read buffer and store the number of bytes read
     // set the selected cell according to 'A' or 'B' from host
     // read 10 empty weight values and store the average in emptyWeightRead#

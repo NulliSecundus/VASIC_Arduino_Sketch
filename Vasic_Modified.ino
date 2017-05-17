@@ -50,6 +50,12 @@ void setup() {
   lcd.begin(16, 2);
   greetingMessage = true;
 
+  // sets up timers to call dataRead and dataWrite, but disables them immediately
+  readTimerID = timer.setInterval(readTime, dataRead);
+  timer.disable(readTimerID);
+  writeTimerID = timer.setInterval(avgTime, dataWrite);
+  timer.disable(writeTimerID);
+
   // change analog reference value from 5V to 2.56V
   //analogReference(INTERNAL2V56);
 }
@@ -274,17 +280,14 @@ void calibrationMode() {
 void collectionMode() {
   lcdScreenPrint("Collection Mode");
 
-  // sets up timers to call dataRead and dataWrite, but disables them immediately
-  // to wait for IR sensor to be broken
-  readTimerID = timer.setInterval(readTime, dataRead);
-  timer.disable(readTimerID);
-  writeTimerID = timer.setInterval(avgTime, dataWrite);
-  timer.disable(writeTimerID);
-  
+  // debug code for numTimers - uncomment to use
+  /*
   int n = timer.getNumTimers();
   lcdScreenPrint(String(n));
-  delay(1000);
+  delay(3000);
+  */
 
+  // to wait for IR sensor to be broken
   while (true) {
     // check for serial imput and parse using same strategy as readBuffer()
     // to check if 'Stop' button has been pressed in host ('K')

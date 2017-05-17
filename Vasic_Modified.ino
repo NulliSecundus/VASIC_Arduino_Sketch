@@ -196,10 +196,12 @@ void calibrationMode() {
 
       case 'A':
         selectedCell = 1;
+        lcdScreenPrint("Left Side: ", 0, "Selected", 0);
         sendChar('a');
         break;
       case 'B':
         selectedCell = 2;
+        lcdScreenPrint("Right Side: ", 0, "Selected", 0);
         sendChar('b');
         break;
       case 'C':
@@ -207,23 +209,21 @@ void calibrationMode() {
           Statistic emptyBuff;
           if (selectedCell == 1) {
             emptyBuff.clear();
+            lcdScreenPrint("Left Side: ", 0, "Empty Weight", 0);
             for (int i = 0; i < 10; i++) {
               emptyBuff.add(analogRead(loadCellPin1));
             }
             //emptyWeightRead1 = analogRead(loadCellPin1);
             emptyWeightRead1 = emptyBuff.average();
-            lcdScreenPrint("Left Side: ", 0, 0);
-            lcdScreenPrint("Empty Weight", 0, 1);
             sendChar('c');
           } else if (selectedCell == 2) {
             emptyBuff.clear();
+            lcdScreenPrint("Right Side: ", 0, "Empty Weight", 0);
             for (int i = 0; i < 10; i++) {
               emptyBuff.add(analogRead(loadCellPin2));
             }
             //emptyWeightRead2 = analogRead(loadCellPin2);
             emptyWeightRead2 = emptyBuff.average();
-            lcdScreenPrint("Right Side: ", 0, 0);
-            lcdScreenPrint("Empty Weight", 0, 1);
             sendChar('c');
           }
           break;
@@ -234,6 +234,7 @@ void calibrationMode() {
           Statistic testBuff;
           if (selectedCell == 1) {
             testBuff.clear();
+            lcdScreenPrint("Left Side: ", 0, "Test Weight", 0);
             for (int i = 0; i < 10; i++) {
               testBuff.add(analogRead(loadCellPin1));
             }
@@ -242,6 +243,7 @@ void calibrationMode() {
             sendChar('d');
           } else if (selectedCell == 2) {
             testBuff.clear();
+            lcdScreenPrint("Right Side: ", 0, "Test Weight", 0);
             for (int i = 0; i < 10; i++) {
               testBuff.add(analogRead(loadCellPin2));
             }
@@ -257,8 +259,8 @@ void calibrationMode() {
         // m = (y2 - y1) / (x2 - x1), y1 = empty weight = 0
         // calculate the appropriate offset value based on the tare value and calibration slope
         // b = -1 * m * x1
-        lcdScreenPrint("Test Weight Sent", 0, 0);
         testWeightValue = parseTestWeight(numBytes - 2);
+        lcdScreenPrint("Test Weight Sent", 0, 0);
         if (selectedCell == 1) {
           calibrationSlope1 = (float)testWeightValue / (testWeightRead1 - emptyWeightRead1);
           calibrationOffset1 = (-1) * calibrationSlope1 * emptyWeightRead1;

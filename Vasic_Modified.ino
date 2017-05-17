@@ -1,6 +1,8 @@
 #include <Statistic.h>
 #include <SimpleTimer.h>
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
+#include "EEPROMAnything.h"
 
 SimpleTimer timer;
 int readTimerID;
@@ -33,10 +35,25 @@ float calibrationOffset2 = 0;
 const int LEDPin = 6;
 const int IRLED = 7;
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-boolean greetingMessage;
 
 int time_step = 1000 ; // every 1s
 long time = 0;
+
+struct configuration
+{
+  float calibrationSlope1;
+  float calibrationSlope2;
+  float calibrationOffset1;
+  float calibrationOffset2;
+};
+
+double dispReading1;
+double dispReading2;
+String text1;
+String text2;
+
+//Set up struct for config
+configuration config_i = { 1 , 0 , 0 , 0 };
 
 void setup() {
   // initialize serial connection
@@ -49,7 +66,6 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-  greetingMessage = true;
 
   // sets up timers to call dataRead and dataWrite, but disables them immediately
   readTimerID = timer.setInterval(readTime, dataRead);
@@ -60,6 +76,18 @@ void setup() {
   //IRTimer setup
   IRTimerID = IRTimer.setInterval(100, readSensorStatus);
   IRTimer.enable(IRTimerID);
+
+  //Pull previous calibration data if available
+  if (EEPROM.read(0) > 0) {
+    EEPROM_readAnything(0, config_i);
+    calibrationSlope1 = config_i.calibrationSlope1;
+    calibrationSlope2 = config_i.calibrationSlope2;
+    calibrationOffset1 = config_i.calibrationOffset1;
+    calibrationOffset2 = config_i.calibrationOffset2;
+  }
+
+  lcdScreenPrint("VASIC", 5, 0);
+  delay(3000);
 }
 
 void loop() {
@@ -70,7 +98,16 @@ void loop() {
 
   IRTimer.run();
   if (millis() > time_step + time) {
-    lcdScreenPrint("VASIC", 5, 0);
+    dispReading1 = analogRead(loadCellPin1);
+    dispReading1 = calibrationSlope1 * dispReading1 + calibrationOffset1;
+
+    dispReading2 = analogRead(loadCellPin2);
+    dispReading2 = calibrationSlope2 * dispReading2 + calibrationOffset2;
+
+    text1 = "Left: " + String(dispReading1);
+    text2 = "Right: " + String(dispReading2);
+
+    lcdScreenPrint(text1, 0, text2, 0);
     time = millis();
   }
 
@@ -80,18 +117,26 @@ void loop() {
       case 'T':
         sendChar('t');
         timeMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
         break;
       case 'Z':
         sendChar('z');
         tareMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
         break;
       case 'P':
         sendChar('p');
         calibrationMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
         break;
       case 'M':
         sendChar('m');
         collectionMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
     }
   }
 }
@@ -282,6 +327,8 @@ void calibrationMode() {
           break;
         case 'Q':
           // exit Calibration Mode when receives 'Q' from host
+          config_i = {calibrationSlope1 , calibrationSlope2 , calibrationOffset1 , calibrationOffset2};
+          EEPROM_writeAnything(0, config_i);
           sendChar('q');
           return;
       }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 
@@ -731,3 +732,7 @@
   </body>
 </html>
 
+=======
+# VASIC_Arduino_Sketch
+Voluntary Access Static Incapacitance Chamber - Arduino microcontroller sketch
+>>>>>>> 927983c634110033f7b5a0a68e427c153cb9fcf4

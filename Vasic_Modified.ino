@@ -9,6 +9,8 @@ char serBuff[10];
 word avgTime = 1000;
 const int readTime = 11;
 
+int IRTimerID;
+
 const int loadCellPin1 = A0;
 const int loadCellPin2 = A1;
 word emptyWeightRead1 = 0;
@@ -278,6 +280,10 @@ void collectionMode() {
   timer.disable(readTimerID);
   writeTimerID = timer.setInterval(avgTime, dataWrite);
   timer.disable(writeTimerID);
+  
+  int n = timer.getNumTimers();
+  lcdScreenPrint(String(n));
+  delay(1000);
 
   while (true) {
     // check for serial imput and parse using same strategy as readBuffer()
@@ -346,7 +352,7 @@ void LED_Control(int i) {
   }
 }
 
-void lcdScreenPrint(String str1, int col1, String str2, int col2){
+void lcdScreenPrint(String str1, int col1, String str2, int col2) {
   lcd.clear();
   lcd.setCursor(col1, 0);
   lcd.print(str1);
@@ -424,6 +430,16 @@ void sendChar(byte toSend) {
   // carriage return character
   Serial.write(toSend);
   Serial.write('\r');
+}
+
+void readSensorStatus() {
+  // read the status of the IR sensor input pin, compare to the threshold value
+  sensorValue = analogRead(sensorPin);
+  if (sensorValue < sensorThreshold) {
+    LED_Control(0);
+  } else {
+    LED_Control(1);
+  }
 }
 
 boolean getSensorStatus() {

@@ -1,11 +1,12 @@
 #include <Statistic.h>
 #include <SimpleTimer.h>
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
+#include "EEPROMAnything.h"
 
 SimpleTimer timer;
 int readTimerID;
 int writeTimerID;
-int vasicTimerID;
 char serBuff[10];
 word avgTime = 1000;
 const int readTime = 11;
@@ -34,10 +35,25 @@ float calibrationOffset2 = 0;
 const int LEDPin = 6;
 const int IRLED = 7;
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-boolean greetingMessage;
 
 int time_step = 1000 ; // every 1s
 long time = 0;
+
+struct configuration
+{
+  float calibrationSlope1;
+  float calibrationSlope2;
+  float calibrationOffset1;
+  float calibrationOffset2;
+};
+
+double dispReading1;
+double dispReading2;
+String text1;
+String text2;
+
+//Set up struct for config
+configuration config_i = { 1 , 0 , 0 , 0 };
 
 void setup() {
   // initialize serial connection
@@ -50,41 +66,48 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-  greetingMessage = true;
 
   // sets up timers to call dataRead and dataWrite, but disables them immediately
   readTimerID = timer.setInterval(readTime, dataRead);
   timer.disable(readTimerID);
   writeTimerID = timer.setInterval(avgTime, dataWrite);
   timer.disable(writeTimerID);
-  vasicTimerID = timer.setInterval(500, vasicGreeting);
-  timer.enable(vasicTimerID);
 
   //IRTimer setup
   IRTimerID = IRTimer.setInterval(100, readSensorStatus);
   IRTimer.enable(IRTimerID);
 
-  // change analog reference value from 5V to 2.56V
-  //analogReference(INTERNAL2V56);
+  //Pull previous calibration data if available
+  if (EEPROM.read(0) > 0) {
+    EEPROM_readAnything(0, config_i);
+    calibrationSlope1 = config_i.calibrationSlope1;
+    calibrationSlope2 = config_i.calibrationSlope2;
+    calibrationOffset1 = config_i.calibrationOffset1;
+    calibrationOffset2 = config_i.calibrationOffset2;
+  }
+
+  lcdScreenPrint("VASIC", 5, 0);
+  delay(3000);
 }
 
 void loop() {
   // main loop: read serial messages and put the microcontroller into the proper mode
   // Print a message to the LCD and wait before clearing.
-  /*
-  while (greetingMessage) {
-    lcd.setCursor(5, 0);
-    lcd.print("VASIC");
-    delay(5000);
-    greetingMessage = false;
-  }
-  */
 
   digitalWrite(IRLED, HIGH);
 
   IRTimer.run();
   if (millis() > time_step + time) {
-    lcdScreenPrint("VASIC", 5, 0);
+    dispReading1 = analogRead(loadCellPin1);
+    dispReading1 = calibrationSlope1 * dispReading1 + calibrationOffset1;
+
+    dispReading2 = analogRead(loadCellPin2);
+    dispReading2 = calibrationSlope2 * dispReading2 + calibrationOffset2;
+
+    text1 = "Left: " + String(dispReading1);
+    text2 = "Right: " + String(dispReading2);
+
+    lcdScreenPrint(text1, 0, text2, 0);
     time = millis();
   }
 
@@ -94,18 +117,26 @@ void loop() {
       case 'T':
         sendChar('t');
         timeMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
         break;
       case 'Z':
         sendChar('z');
         tareMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
         break;
       case 'P':
         sendChar('p');
         calibrationMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
         break;
       case 'M':
         sendChar('m');
         collectionMode();
+        lcdScreenPrint("VASIC", 5, 0);
+        delay(3000);
     }
   }
 }
@@ -296,6 +327,8 @@ void calibrationMode() {
           break;
         case 'Q':
           // exit Calibration Mode when receives 'Q' from host
+          config_i = {calibrationSlope1 , calibrationSlope2 , calibrationOffset1 , calibrationOffset2};
+          EEPROM_writeAnything(0, config_i);
           sendChar('q');
           return;
       }
@@ -306,13 +339,6 @@ void calibrationMode() {
 
 void collectionMode() {
   lcdScreenPrint("Collection Mode");
-
-  // debug code for numTimers - uncomment to use
-  /*
-  int n = timer.getNumTimers();
-  lcdScreenPrint(String(n));
-  delay(3000);
-  */
 
   // to wait for IR sensor to be broken
   while (true) {
@@ -379,13 +405,6 @@ void LED_Control(int i) {
     digitalWrite(LEDPin, HIGH);
   } else {
     digitalWrite(LEDPin, LOW);
-  }
-}
-
-void vasicGreeting() {
-  if (millis() > time_step + time) {
-    lcdScreenPrint("VASIC", 5, 0);
-    time = millis();
   }
 }
 

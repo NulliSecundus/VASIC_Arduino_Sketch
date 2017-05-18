@@ -41,17 +41,11 @@ long time = 0;
 
 struct configuration
 {
-  float calibrationSlope1;
-  float calibrationSlope2;
-  float calibrationOffset1;
-  float calibrationOffset2;
-  /*
   float emptyWeightRead1;
   float emptyWeightRead2;
   float testWeightRead1;
   float testWeightRead2;
   float testWeightValue;
-  */
 };
 
 double dispReading1;
@@ -60,7 +54,7 @@ String text1;
 String text2;
 
 //Set up struct for config
-configuration config_i = { 0 , 0 , 0 , 0 };
+configuration config_i = { 0 , 0 , 0 , 0 , 0};
 
 void setup() {
   // initialize serial connection
@@ -86,13 +80,21 @@ void setup() {
 
   //Pull previous calibration data if available
   if (EEPROM.read(0) > 0) {
+    //Import data from EEPROM
     EEPROM_readAnything(0, config_i);
-    calibrationSlope1 = config_i.calibrationSlope1;
-    calibrationSlope2 = config_i.calibrationSlope2;
-    calibrationOffset1 = config_i.calibrationOffset1;
-    calibrationOffset2 = config_i.calibrationOffset2;
+    //Assign data to variables
+    emptyWeightRead1 = config_i.emptyWeightRead1;
+    emptyWeightRead2 = config_i.emptyWeightRead2;
+    testWeightRead1 = config_i.testWeightRead1;
+    testWeightRead2 = config_i.testWeightRead2;
+    testWeightValue = config_i.testWeightValue;
+    //Recalculate the calibration data
+    calibrationSlope1 = testWeightValue / (testWeightRead1 - emptyWeightRead1);
+    calibrationOffset1 = (-1) * calibrationSlope1 * emptyWeightRead1;
+    calibrationSlope2 = testWeightValue / (testWeightRead2 - emptyWeightRead2);
+    calibrationOffset2 = (-1) * calibrationSlope2 * emptyWeightRead2;
   }
-
+  //Print initial greeting message
   lcdScreenPrint("VASIC", 5, 0);
   delay(3000);
 }
@@ -215,13 +217,7 @@ void timeMode() {
 
 void tareMode() {
   lcdScreenPrint("Tare Mode");
-
-  /*
-    config_i.calibrationSlope1 = calibrationSlope1;
-    config_i.calibrationSlope2 = calibrationSlope2;
-    config_i.calibrationOffset1 = calibrationOffset1;
-    config_i.calibrationOffset2 = calibrationOffset2;
-  */
+  Statistic emptyBuff;
 
   while (true) {
     IRTimer.run();
@@ -231,30 +227,30 @@ void tareMode() {
       readBuffer();
       switch (serBuff[0]) {
         case 'A':
-          emptyWeightRead1 = analogRead(loadCellPin1);
-          /*
-          calibrationSlope1 = (float)testWeightValue / (testWeightRead1 - emptyWeightRead1);
+          emptyBuff.clear();
+          for (int i = 0; i < 100; i++) {
+            emptyBuff.add(analogRead(loadCellPin1));
+          }
+          emptyWeightRead1 = emptyBuff.average();
+          calibrationSlope1 = testWeightValue / (testWeightRead1 - emptyWeightRead1);
           calibrationOffset1 = (-1) * calibrationSlope1 * emptyWeightRead1;
-          config_i.calibrationSlope1 = calibrationSlope1;
-          config_i.calibrationOffset1 = calibrationOffset1;
+          config_i.emptyWeightRead1 = emptyWeightRead1;
           sendChar('a');
-          */
           break;
         case 'B':
-          emptyWeightRead2 = analogRead(loadCellPin2);
-          /*
-          calibrationSlope2 = (float)testWeightValue / (testWeightRead2 - emptyWeightRead2);
+          emptyBuff.clear();
+          for (int i = 0; i < 100; i++) {
+            emptyBuff.add(analogRead(loadCellPin2));
+          }
+          emptyWeightRead2 = emptyBuff.average();
+          calibrationSlope2 = testWeightValue / (testWeightRead2 - emptyWeightRead2);
           calibrationOffset2 = (-1) * calibrationSlope2 * emptyWeightRead2;
-          config_i.calibrationSlope2 = calibrationSlope2;
-          config_i.calibrationOffset2 = calibrationOffset2;
-          */
+          config_i.emptyWeightRead2 = emptyWeightRead2;
           sendChar('b');
           break;
         case 'Q':
           // loop infinitely until 'Q' is received from the host to exit Tare Mode
-          /*
           EEPROM_writeAnything(0, config_i);
-          */
           sendChar('q');
           return;
       }
@@ -297,8 +293,8 @@ void calibrationMode() {
               for (int i = 0; i < 100; i++) {
                 emptyBuff.add(analogRead(loadCellPin1));
               }
-              //emptyWeightRead1 = analogRead(loadCellPin1);
               emptyWeightRead1 = emptyBuff.average();
+              config_i.emptyWeightRead1 = emptyWeightRead1;
               sendChar('c');
             } else if (selectedCell == 2) {
               emptyBuff.clear();
@@ -308,6 +304,7 @@ void calibrationMode() {
               }
               //emptyWeightRead2 = analogRead(loadCellPin2);
               emptyWeightRead2 = emptyBuff.average();
+              config_i.emptyWeightRead2 = emptyWeightRead2;
               sendChar('c');
             }
             break;
@@ -324,6 +321,7 @@ void calibrationMode() {
               }
               //testWeightRead1 = analogRead(loadCellPin1);
               testWeightRead1 = testBuff.average();
+              config_i.testWeightRead1 = testWeightRead1;
               sendChar('d');
             } else if (selectedCell == 2) {
               testBuff.clear();
@@ -333,6 +331,7 @@ void calibrationMode() {
               }
               //testWeightRead2 = analogRead(loadCellPin2);
               testWeightRead2 = testBuff.average();
+              config_i.testWeightRead2 = testWeightRead2;
               sendChar('d');
             }
             break;
@@ -344,6 +343,7 @@ void calibrationMode() {
           // calculate the appropriate offset value based on the tare value and calibration slope
           // b = -1 * m * x1
           testWeightValue = parseTestWeight(numBytes - 2);
+          config_i.testWeightValue = testWeightValue;
           lcdScreenPrint("Test Weight Sent", 0, 0);
           if (selectedCell == 1) {
             calibrationSlope1 = testWeightValue / (testWeightRead1 - emptyWeightRead1);
@@ -356,7 +356,6 @@ void calibrationMode() {
           break;
         case 'Q':
           // exit Calibration Mode when receives 'Q' from host
-          config_i = {calibrationSlope1 , calibrationSlope2 , calibrationOffset1 , calibrationOffset2};
           EEPROM_writeAnything(0, config_i);
           sendChar('q');
           return;
@@ -496,7 +495,7 @@ void dataWrite() {
   return;
 }
 
-void averageToString(float avg, String& averageString) {
+void averageToString(float avg, String & averageString) {
   // use the String constructor to create a string from the avg value
   // retain 6 decimal places of the value in the string
   averageString = String(avg, 6);

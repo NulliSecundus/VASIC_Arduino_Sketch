@@ -38,6 +38,7 @@ LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 int time_step = 1000 ; // every 1s
 long time = 0;
+Statistic dispBuff;
 
 struct configuration
 {
@@ -107,10 +108,18 @@ void loop() {
 
   IRTimer.run();
   if (millis() > time_step + time) {
-    dispReading1 = analogRead(loadCellPin1);
+    dispBuff.clear();
+    for (int i = 0; i < 100; i++) {
+      dispBuff.add(analogRead(loadCellPin1));
+    }
+    dispReading1 = dispBuff.average();
     dispReading1 = calibrationSlope1 * dispReading1 + calibrationOffset1;
 
-    dispReading2 = analogRead(loadCellPin2);
+    dispBuff.clear();
+    for (int i = 0; i < 100; i++) {
+      dispBuff.add(analogRead(loadCellPin2));
+    }
+    dispReading2 = dispBuff.average();
     dispReading2 = calibrationSlope2 * dispReading2 + calibrationOffset2;
 
     text1 = "Left: " + String(dispReading1);

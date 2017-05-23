@@ -379,6 +379,7 @@ void collectionMode() {
 
   // to wait for IR sensor to be broken
   while (true) {
+    timer.run();
     // check for serial imput and parse using same strategy as readBuffer()
     // to check if 'Stop' button has been pressed in host ('K')
 
@@ -420,7 +421,7 @@ void collectionMode() {
         timer.enable(readTimerID);
         timer.enable(writeTimerID);
       }
-      timer.run();
+      //timer.run();
     }
     else {
       // if the sensor is made, check the timer status
@@ -432,6 +433,7 @@ void collectionMode() {
         loadCellVals1.clear();
         loadCellVals2.clear();
       }
+      //timer.run();
     }
   }
   lcd.clear();

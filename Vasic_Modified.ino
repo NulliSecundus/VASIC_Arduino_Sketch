@@ -9,7 +9,7 @@ int readTimerID;
 int writeTimerID;
 char serBuff[10];
 int avgTime = 1000;
-const int readTime = 11;
+const int readTime = 20;
 
 SimpleTimer IRTimer;
 int IRTimerID;
@@ -68,12 +68,6 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-
-  // sets up timers to call dataRead and dataWrite, but disables them immediately
-  readTimerID = timer.setInterval(readTime, dataRead);
-  timer.disable(readTimerID);
-  writeTimerID = timer.setInterval(avgTime, dataWrite);
-  timer.disable(writeTimerID);
 
   //IRTimer setup
   IRTimerID = IRTimer.setInterval(100, readSensorStatus);
@@ -172,42 +166,52 @@ void timeMode() {
         switch (serBuff[1]) {
           case '0':
             avgTime = 500;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '1':
             avgTime = 1000;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '2':
             avgTime = 1500;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '3':
             avgTime = 2000;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '4':
             avgTime = 2500;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '5':
             avgTime = 3000;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '6':
             avgTime = 3500;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '7':
             avgTime = 4000;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '8':
             avgTime = 4500;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
           case '9':
             avgTime = 5000;
+            lcdScreenPrint("Time Set: ", 0, (String)avgTime, 0);
             sendChar('g');
             break;
         }
@@ -237,7 +241,7 @@ void tareMode() {
       switch (serBuff[0]) {
         case 'A':
           emptyBuff.clear();
-          for (int i = 0; i < 100; i++) {
+          for (int i = 0; i < 1000; i++) {
             emptyBuff.add(analogRead(loadCellPin1));
           }
           emptyWeightRead1 = emptyBuff.average();
@@ -248,7 +252,7 @@ void tareMode() {
           break;
         case 'B':
           emptyBuff.clear();
-          for (int i = 0; i < 100; i++) {
+          for (int i = 0; i < 1000; i++) {
             emptyBuff.add(analogRead(loadCellPin2));
           }
           emptyWeightRead2 = emptyBuff.average();
@@ -275,8 +279,8 @@ void calibrationMode() {
     IRTimer.run();
     // read buffer and store the number of bytes read
     // set the selected cell according to 'A' or 'B' from host
-    // read 100 empty weight values and store the average in emptyWeightRead#
-    // read 100 test weight value and store the average in testWeightRead#
+    // read empty weight values and store the average in emptyWeightRead#
+    // read test weight value and store the average in testWeightRead#
     // read the exact test weight value sent from the host (details below)
     if (hasBuffer()) {
       byte numBytes = readBuffer();
@@ -299,7 +303,7 @@ void calibrationMode() {
             if (selectedCell == 1) {
               emptyBuff.clear();
               lcdScreenPrint("Left Side: ", 0, "Empty Weight", 0);
-              for (int i = 0; i < 100; i++) {
+              for (int i = 0; i < 1000; i++) {
                 emptyBuff.add(analogRead(loadCellPin1));
               }
               emptyWeightRead1 = emptyBuff.average();
@@ -308,7 +312,7 @@ void calibrationMode() {
             } else if (selectedCell == 2) {
               emptyBuff.clear();
               lcdScreenPrint("Right Side: ", 0, "Empty Weight", 0);
-              for (int i = 0; i < 100; i++) {
+              for (int i = 0; i < 1000; i++) {
                 emptyBuff.add(analogRead(loadCellPin2));
               }
               //emptyWeightRead2 = analogRead(loadCellPin2);
@@ -325,7 +329,7 @@ void calibrationMode() {
             if (selectedCell == 1) {
               testBuff.clear();
               lcdScreenPrint("Left Side: ", 0, "Test Weight", 0);
-              for (int i = 0; i < 100; i++) {
+              for (int i = 0; i < 1000; i++) {
                 testBuff.add(analogRead(loadCellPin1));
               }
               //testWeightRead1 = analogRead(loadCellPin1);
@@ -335,7 +339,7 @@ void calibrationMode() {
             } else if (selectedCell == 2) {
               testBuff.clear();
               lcdScreenPrint("Right Side: ", 0, "Test Weight", 0);
-              for (int i = 0; i < 100; i++) {
+              for (int i = 0; i < 1000; i++) {
                 testBuff.add(analogRead(loadCellPin2));
               }
               //testWeightRead2 = analogRead(loadCellPin2);
@@ -377,8 +381,15 @@ void calibrationMode() {
 void collectionMode() {
   lcdScreenPrint("Collection Mode");
 
+  // sets up timers to call dataRead and dataWrite, but disables them immediately
+  readTimerID = timer.setInterval(readTime, dataRead);
+  timer.disable(readTimerID);
+  writeTimerID = timer.setInterval(avgTime, dataWrite);
+  timer.disable(writeTimerID);
+
   // to wait for IR sensor to be broken
   while (true) {
+    timer.run();
     // check for serial imput and parse using same strategy as readBuffer()
     // to check if 'Stop' button has been pressed in host ('K')
 
@@ -409,18 +420,19 @@ void collectionMode() {
       }
     }
     // check the status of the IR sensor
-    else if (getSensorStatus()) {
+    if (getSensorStatus()) {
       // if the sensor is broken
       // check the status of the timers
       if (!timer.isEnabled(readTimerID)) {
         // clear values, send sensor status character to host, start timers
         loadCellVals1.clear();
         loadCellVals2.clear();
-        sendChar('V');
+        timer.restartTimer(readTimerID);
+        timer.restartTimer(writeTimerID);
         timer.enable(readTimerID);
         timer.enable(writeTimerID);
+        sendChar('V');
       }
-      timer.run();
     }
     else {
       // if the sensor is made, check the timer status
@@ -433,6 +445,7 @@ void collectionMode() {
         loadCellVals2.clear();
       }
     }
+    delay(30);
   }
   lcd.clear();
 }

@@ -9,7 +9,7 @@ int readTimerID;
 int writeTimerID;
 char serBuff[10];
 int avgTime = 1000;
-const int readTime = 11;
+const int readTime = 20;
 
 SimpleTimer IRTimer;
 int IRTimerID;
@@ -410,16 +410,18 @@ void collectionMode() {
       }
     }
     // check the status of the IR sensor
-    else if (getSensorStatus()) {
+    if (getSensorStatus()) {
       // if the sensor is broken
       // check the status of the timers
       if (!timer.isEnabled(readTimerID)) {
         // clear values, send sensor status character to host, start timers
         loadCellVals1.clear();
         loadCellVals2.clear();
-        sendChar('V');
+        timer.restartTimer(readTimerID);
+        timer.restartTimer(writeTimerID);
         timer.enable(readTimerID);
         timer.enable(writeTimerID);
+        sendChar('V');
       }
       //timer.run();
     }
@@ -435,6 +437,7 @@ void collectionMode() {
       }
       //timer.run();
     }
+    delay(30);
   }
   lcd.clear();
 }

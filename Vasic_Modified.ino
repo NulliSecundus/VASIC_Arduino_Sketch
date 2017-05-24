@@ -279,8 +279,8 @@ void calibrationMode() {
     IRTimer.run();
     // read buffer and store the number of bytes read
     // set the selected cell according to 'A' or 'B' from host
-    // read 100 empty weight values and store the average in emptyWeightRead#
-    // read 100 test weight value and store the average in testWeightRead#
+    // read empty weight values and store the average in emptyWeightRead#
+    // read test weight value and store the average in testWeightRead#
     // read the exact test weight value sent from the host (details below)
     if (hasBuffer()) {
       byte numBytes = readBuffer();

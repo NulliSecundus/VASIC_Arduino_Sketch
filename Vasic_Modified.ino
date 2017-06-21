@@ -506,7 +506,7 @@ void dataWrite() {
   //lcd.clear();
   Serial.print(toSend1);
   Serial.print(toSend2);
-  Serial.print("E");
+//  Serial.print("E");
   //lcd.setCursor(0, 0);
   //lcd.print(toSend1);
 

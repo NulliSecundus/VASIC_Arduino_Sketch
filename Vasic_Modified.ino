@@ -129,26 +129,26 @@ void loop() {
       case 'T':
         sendChar('t');
         timeMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
         break;
       case 'Z':
         sendChar('z');
         tareMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
         break;
       case 'P':
         sendChar('p');
         calibrationMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
         break;
       case 'M':
         sendChar('m');
         collectionMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
     }
   }
 }

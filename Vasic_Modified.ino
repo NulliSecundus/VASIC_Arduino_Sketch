@@ -129,26 +129,26 @@ void loop() {
       case 'T':
         sendChar('t');
         timeMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
         break;
       case 'Z':
         sendChar('z');
         tareMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
         break;
       case 'P':
         sendChar('p');
         calibrationMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
         break;
       case 'M':
         sendChar('m');
         collectionMode();
-        lcdScreenPrint("VASIC", 5, 0);
-        delay(3000);
+//        lcdScreenPrint("VASIC", 5, 0);
+//        delay(3000);
     }
   }
 }
@@ -221,6 +221,7 @@ void timeMode() {
         Serial.write('\r');
       } else if (serBuff[0] == 'X') {
         // remain in Time Mode until receive 'X' from host
+        sendChar('q');
         return;
       }
     }
@@ -504,9 +505,11 @@ void dataWrite() {
   // send the strings to host
   //lcd.clear();
   Serial.print(toSend1);
+  Serial.print(toSend2);
+//  Serial.print("E");
   //lcd.setCursor(0, 0);
   //lcd.print(toSend1);
-  Serial.print(toSend2);
+
   //lcd.setCursor(0, 1);
   //lcd.print(toSend2);
 
@@ -529,13 +532,13 @@ void averageToString(float avg, String & averageString) {
   return;
 }
 
-void sendChar(byte toSend) {
+void sendChar(char toSend) {
   // when a character is read by the host, the '\r' char
   // indicates the end of the message.
   // Sends the given character to the host followed by a
   // carriage return character
-  Serial.write(toSend);
-  Serial.write('\r');
+  Serial.print(toSend);
+  //  Serial.write('\r');
 }
 
 void readSensorStatus() {

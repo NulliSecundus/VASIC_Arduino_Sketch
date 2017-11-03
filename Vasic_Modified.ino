@@ -129,26 +129,18 @@ void loop() {
       case 'T':
         sendChar('t');
         timeMode();
-//        lcdScreenPrint("VASIC", 5, 0);
-//        delay(3000);
         break;
       case 'Z':
         sendChar('z');
         tareMode();
-//        lcdScreenPrint("VASIC", 5, 0);
-//        delay(3000);
         break;
       case 'P':
         sendChar('p');
         calibrationMode();
-//        lcdScreenPrint("VASIC", 5, 0);
-//        delay(3000);
         break;
       case 'M':
         sendChar('m');
         collectionMode();
-//        lcdScreenPrint("VASIC", 5, 0);
-//        delay(3000);
     }
   }
 }
@@ -503,15 +495,8 @@ void dataWrite() {
   toSend1 = 'L' + toSend1;
   toSend2 = 'R' + toSend2;
   // send the strings to host
-  //lcd.clear();
   Serial.print(toSend1);
   Serial.print(toSend2);
-//  Serial.print("E");
-  //lcd.setCursor(0, 0);
-  //lcd.print(toSend1);
-
-  //lcd.setCursor(0, 1);
-  //lcd.print(toSend2);
 
   // clear all data
   loadCellVals1.clear();
@@ -538,7 +523,6 @@ void sendChar(char toSend) {
   // Sends the given character to the host followed by a
   // carriage return character
   Serial.print(toSend);
-  //  Serial.write('\r');
 }
 
 void readSensorStatus() {

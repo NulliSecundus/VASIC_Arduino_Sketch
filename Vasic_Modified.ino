@@ -62,7 +62,6 @@ void setup() {
   Serial.begin(9600);
 
   // initialize IR sensor pins for input
-  pinMode(sensorPin, INPUT);
   pinMode(IRLED, OUTPUT);
   pinMode(LEDPin, OUTPUT);
 

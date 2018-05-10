@@ -22,7 +22,7 @@ float testWeightRead1 = 0;
 float testWeightRead2 = 0;
 float testWeightValue = 0;
 const int sensorPin = A2;
-const int sensorThreshold = 50;
+const int sensorThreshold = 5;
 int sensorValue;
 
 Statistic loadCellVals1;
@@ -62,7 +62,6 @@ void setup() {
   Serial.begin(9600);
 
   // initialize IR sensor pins for input
-  pinMode(sensorPin, INPUT);
   pinMode(IRLED, OUTPUT);
   pinMode(LEDPin, OUTPUT);
 
@@ -539,7 +538,7 @@ boolean getSensorStatus() {
   // read the status of the IR sensor input pin, compare to the threshold value
   // return true if sensor has been broken
   sensorValue = analogRead(sensorPin);
-  if (sensorValue < sensorThreshold) {
+  if (sensorValue > sensorThreshold) {
     LED_Control(0);
     return true;
   } else {
